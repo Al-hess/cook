@@ -386,7 +386,7 @@ for key, default in [
 # ─────────────────────────────────────────
 
 st.markdown('<div class="app-title">🌸 Simp App</div>', unsafe_allow_html=True)
-st.markdown('<div class="app-sub">we're cooked chat 🍳 🏃</div>', unsafe_allow_html=True)
+st.markdown('<div class="app-sub">we are cooked chat 🍳 🏃</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
 #  RECIPE DETAIL VIEW
