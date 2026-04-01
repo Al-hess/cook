@@ -58,7 +58,7 @@ def init_db():
         INSERT OR IGNORE INTO categories (name) VALUES
             ('🍝 Pasta'), ('🥗 Salads'), ('🥩 Meat'),
             ('🐟 Fish'), ('🥘 Soups & Stews'), ('🍰 Desserts'),
-            ('🌮 Street Food'), ('🥞 Breakfast'), ('🍹 Drinks'), ('🥦 Vegetarian');
+            ('🌮 Fast'), ('🥞 Breakfast'), ('🍹 Drinks'), ('🥦 Vegetarian');
     """)
     conn.commit()
     conn.close()
@@ -145,7 +145,7 @@ def img_to_b64(blob):
 
 st.set_page_config(
     page_title="Cook 🍳",
-    page_icon="🍳",
+    page_icon="",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -329,7 +329,7 @@ if "active_tab" not in st.session_state:
 #  HEADER
 # ─────────────────────────────────────────
 
-st.markdown('<div class="app-title">🍳 Kelia Cook</div>', unsafe_allow_html=True)
+st.markdown('<div class="app-title">🍳 Ratatouille </div>', unsafe_allow_html=True)
 st.markdown('<div class="app-sub"> We\'re cooked chat</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
