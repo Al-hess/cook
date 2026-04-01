@@ -181,7 +181,7 @@ ACTIVITY_CATEGORIES = [
 # ─────────────────────────────────────────
 
 st.set_page_config(
-    page_title="Kelia App 🌸",
+    page_title="Simp App 🌸",
     page_icon="🌸",
     layout="centered",
     initial_sidebar_state="collapsed"
