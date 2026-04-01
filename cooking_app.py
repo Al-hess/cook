@@ -158,7 +158,10 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
         background-color: #FFF8F2;
     }
-    .block-container { padding-top: 1.5rem; padding-bottom: 3rem; max-width: 780px; }
+    .block-container { padding-top: 2.5rem; padding-bottom: 3rem; max-width: 780px; }
+    /* Ensure the header area doesn't clip the app title */
+    header[data-testid="stHeader"] { background: transparent; }
+    #MainMenu, footer { visibility: hidden; }
 
     /* ── Title ── */
     .app-title {
@@ -448,10 +451,11 @@ def show_recipe_form(edit_id=None):
     cat_names = [c[1] for c in categories]
     cat_map = {c[1]: c[0] for c in categories}
 
-    with st.form("recipe_form", clear_on_submit=not is_edit):
-        name = st.text_input("Recipe Name *", value=prefill["name"], placeholder="e.g. Grandma's Risotto")
-        author = st.text_input("Added by", value=prefill["author"], placeholder="Your name or Kelia")
+    # ── Name & Author are OUTSIDE the form so Enter won't submit accidentally ──
+    name = st.text_input("Recipe Name *", value=prefill["name"], placeholder="e.g. Grandma's Risotto", key="form_name")
+    author = st.text_input("Added by", value=prefill["author"], placeholder="Your name or Kelia", key="form_author")
 
+    with st.form("recipe_form", clear_on_submit=not is_edit):
         col_cat, col_new = st.columns([3, 2])
         with col_cat:
             sel_cat = st.selectbox("Category", cat_names,
@@ -496,7 +500,6 @@ def show_recipe_form(edit_id=None):
             step_text = st.text_area(f"Step {i+1}", value=dst, key=f"step_{i}", height=68, placeholder=f"Describe step {i+1}…")
             step_rows.append(step_text)
 
-        col_add_ing, col_add_step = st.columns(2)
         submitted = st.form_submit_button("💾 Save Recipe", type="primary", use_container_width=True)
 
     # Buttons outside form
@@ -511,7 +514,10 @@ def show_recipe_form(edit_id=None):
             st.rerun()
 
     if submitted:
-        if not name.strip():
+        # Read name/author from session state since they are outside the form
+        name = st.session_state.get("form_name", "").strip()
+        author = st.session_state.get("form_author", "").strip()
+        if not name:
             st.error("Recipe name is required.")
             return
 
