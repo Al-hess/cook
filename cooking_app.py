@@ -193,7 +193,7 @@ def get_counter(counter_id):
 # ─────────────────────────────────────────
 
 st.set_page_config(
-    page_title="Kelia App 🌸",
+    page_title="Simp App",
     page_icon="🌸",
     layout="centered",
     initial_sidebar_state="collapsed"
@@ -397,8 +397,8 @@ for key, default in [
 #  HEADER
 # ─────────────────────────────────────────
 
-st.markdown('<div class="app-title">🌸 Kelia App</div>', unsafe_allow_html=True)
-st.markdown('<div class="app-sub">Our little world 🍳 🏃</div>', unsafe_allow_html=True)
+st.markdown('<div class="app-title">🌸 Simp App</div>', unsafe_allow_html=True)
+st.markdown('<div class="app-sub">We are cooked chat 🍳 🏃</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
 #  RECIPE DETAIL VIEW
