@@ -724,7 +724,7 @@ def show_recipe_form(edit_id=None):
 #  RECIPE CARDS
 # ─────────────────────────────────────────
 
-def show_recipe_cards(recipes):
+def show_recipe_cards(recipes, prefix=""):
     if not recipes:
         st.markdown('<div class="empty-state"><span class="emoji">🍽️</span>No recipes here yet.<br>Add your first one!</div>', unsafe_allow_html=True)
         return
@@ -746,7 +746,7 @@ def show_recipe_cards(recipes):
                 if rauthor: meta_parts.append(f"by {rauthor}")
                 st.caption("  ·  ".join(meta_parts))
             with cols[1]:
-                if st.button("Open →", key=f"open_{rid}"):
+                if st.button("Open →", key=f"open_{prefix}_{rid}"):
                     st.session_state.view_recipe_id = rid
                     st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
@@ -819,7 +819,7 @@ def show_activity_form(edit_id=None):
 #  ACTIVITY CARDS
 # ─────────────────────────────────────────
 
-def show_activity_cards(activities):
+def show_activity_cards(activities, prefix=""):
     if not activities:
         st.markdown('<div class="empty-state"><span class="emoji">🏃</span>No activities yet.<br>Add your first one!</div>', unsafe_allow_html=True)
         return
@@ -846,7 +846,7 @@ def show_activity_cards(activities):
                     unsafe_allow_html=True
                 )
             with cols[1]:
-                if st.button("Open →", key=f"act_open_{aid}"):
+                if st.button("Open →", key=f"act_open_{prefix}_{aid}"):
                     st.session_state.view_activity_id = aid
                     st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
@@ -959,7 +959,7 @@ else:
             recipes = get_recipes(favourite_only=False, category_id=filter_cat_id, search=search)
             total = len(recipes)
             st.caption(f"{total} recipe{'s' if total != 1 else ''} found")
-            show_recipe_cards(recipes)
+            show_recipe_cards(recipes, prefix="browse")
 
         with sub_add:
             show_recipe_form()
@@ -969,7 +969,7 @@ else:
             if not fav_recipes:
                 st.markdown('<div class="empty-state"><span class="emoji">❤️</span>No favourites yet.<br>Open a recipe and tap ❤️ Favourite.</div>', unsafe_allow_html=True)
             else:
-                show_recipe_cards(fav_recipes)
+                show_recipe_cards(fav_recipes, prefix="fav")
 
     # ════════════════════════════════════════
     #  ACTIVITIES TAB
@@ -987,7 +987,7 @@ else:
 
             activities = get_activities(search=act_search, category=act_filter_val)
             st.caption(f"{len(activities)} activit{'ies' if len(activities) != 1 else 'y'} found")
-            show_activity_cards(activities)
+            show_activity_cards(activities, prefix="browse")
 
         with sub_act_add:
             show_activity_form()
@@ -997,7 +997,7 @@ else:
             if not fav_acts:
                 st.markdown('<div class="empty-state"><span class="emoji">❤️</span>No favourite activities yet.<br>Open one and tap ❤️ Favourite.</div>', unsafe_allow_html=True)
             else:
-                show_activity_cards(fav_acts)
+                show_activity_cards(fav_acts, prefix="fav")
 
     # ════════════════════════════════════════
     #  US TAB (COUNTERS)
