@@ -926,7 +926,7 @@ elif st.session_state.edit_activity_id:
 
 else:
     # ── THREE TOP-LEVEL TABS ──
-    tab_cooking, tab_activities, tab_us = st.tabs(["🍳 Cooking", "🏃 Activities", "💕 Us"])
+    tab_cooking, tab_activities, tab_us = st.tabs(["🍳 Cooking", "🏃 Activities", "Rat counter"])
 
     # ════════════════════════════════════════
     #  COOKING TAB
