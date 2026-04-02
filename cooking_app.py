@@ -939,7 +939,7 @@ elif st.session_state.edit_activity_id:
 
 else:
     # ── FOUR TOP-LEVEL TABS ──
-    tab_cooking, tab_activities, tab_us, tab_movies = st.tabs(["🍳 Cooking", "🏃 Activities", "Rat counter", "🍿 Movies"])
+    tab_cooking, tab_activities, tab_us, tab_movies = st.tabs(["🍳 Cooking", "🏃 Activities", "Rat counter 🐀", "🍿 Movies"])
 
     # ════════════════════════════════════════
     #  COOKING TAB
@@ -1015,7 +1015,7 @@ else:
         days_date = (now - last_date).days if last_date else 0
         days_flowers = (now - last_flowers).days if last_flowers else 0
         
-        st.markdown('<div class="section-header">💑 Trackers</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">💑 Rat Trackers 🐀</div>', unsafe_allow_html=True)
         
         ca, cb = st.columns(2)
         with ca:
@@ -1045,19 +1045,19 @@ else:
         st.markdown('<div class="section-header">🍿 Movie List</div>', unsafe_allow_html=True)
         
         with st.expander("➕ Add New Movie", expanded=True):
-            mc1, mc2 = st.columns([2, 1])
-            with mc1:
-                m_title = st.text_input("Movie Title", key="mov_title", placeholder="e.g. Inception")
-            with mc2:
-                m_cat = st.selectbox("Category", MOVIE_CATEGORIES, key="mov_cat")
-                
-            if st.button("💾 Save Movie", type="primary", use_container_width=True):
-                if m_title.strip():
-                    execute("INSERT INTO movies (title, category, watched) VALUES (?, ?, 0)", (m_title.strip(), m_cat))
-                    st.session_state.mov_title = ""
-                    st.rerun()
-                else:
-                    st.error("⚠️ Movie title is required!")
+            with st.form("add_movie_form", clear_on_submit=True):
+                mc1, mc2 = st.columns([2, 1])
+                with mc1:
+                    m_title = st.text_input("Movie Title", placeholder="e.g. Inception")
+                with mc2:
+                    m_cat = st.selectbox("Category", MOVIE_CATEGORIES)
+                    
+                if st.form_submit_button("💾 Save Movie", use_container_width=True, type="primary"):
+                    if m_title.strip():
+                        execute("INSERT INTO movies (title, category, watched) VALUES (?, ?, 0)", (m_title.strip(), m_cat))
+                        st.rerun()
+                    else:
+                        st.error("⚠️ Movie title is required!")
 
         st.markdown('<div class="section-header">📺 To Watch</div>', unsafe_allow_html=True)
         movies_to_watch = fetch_all("SELECT movie_id, title, category FROM movies WHERE watched = 0 ORDER BY movie_id DESC")
