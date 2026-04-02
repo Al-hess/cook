@@ -72,6 +72,13 @@ def init_db():
             last_date     TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS movies (
+            movie_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            title         TEXT NOT NULL,
+            category      TEXT NOT NULL,
+            watched       INTEGER DEFAULT 0
+        );
+
         INSERT OR IGNORE INTO categories (name) VALUES
             ('🍝 Pasta'), ('🥗 Salads'), ('🥩 Meat'),
             ('🐟 Fish'), ('🥘 Soups & Stews'), ('🍰 Desserts'),
@@ -180,6 +187,12 @@ def delete_activity(activity_id):
 ACTIVITY_CATEGORIES = [
     "🏃 Outdoor", "🏋️ Sport", "🎨 Creative", "🎲 Games",
     "🎬 Entertainment", "🍽️ Food & Drink", "✈️ Travel", "🧘 Wellness", "📚 Learning", "🛍️ Shopping"
+]
+
+MOVIE_CATEGORIES = [
+    "🍿 Action", "😂 Comedy", "🎞️ Drama", "🥺 Romance", 
+    "🤯 Sci-Fi", "🧙 Fantasy", "😱 Horror", "🕵️ Thriller", 
+    "🎬 Documentary", "🦸 Superhero", "🐉 Animation", "🤷 Other"
 ]
 
 def get_counter(counter_id):
@@ -925,8 +938,8 @@ elif st.session_state.edit_activity_id:
     show_activity_form(edit_id=st.session_state.edit_activity_id)
 
 else:
-    # ── THREE TOP-LEVEL TABS ──
-    tab_cooking, tab_activities, tab_us = st.tabs(["🍳 Cooking", "🏃 Activities", "Rat counter"])
+    # ── FOUR TOP-LEVEL TABS ──
+    tab_cooking, tab_activities, tab_us, tab_movies = st.tabs(["🍳 Cooking", "🏃 Activities", "Rat counter", "🍿 Movies"])
 
     # ════════════════════════════════════════
     #  COOKING TAB
@@ -1024,3 +1037,68 @@ else:
                 execute("REPLACE INTO counters (id, last_date) VALUES (?, ?)", ("last_flowers", datetime.datetime.now().isoformat()))
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
+
+    # ════════════════════════════════════════
+    #  MOVIES TAB
+    # ════════════════════════════════════════
+    with tab_movies:
+        st.markdown('<div class="section-header">🍿 Movie List</div>', unsafe_allow_html=True)
+        
+        with st.expander("➕ Add New Movie", expanded=True):
+            mc1, mc2 = st.columns([2, 1])
+            with mc1:
+                m_title = st.text_input("Movie Title", key="mov_title", placeholder="e.g. Inception")
+            with mc2:
+                m_cat = st.selectbox("Category", MOVIE_CATEGORIES, key="mov_cat")
+                
+            if st.button("💾 Save Movie", type="primary", use_container_width=True):
+                if m_title.strip():
+                    execute("INSERT INTO movies (title, category, watched) VALUES (?, ?, 0)", (m_title.strip(), m_cat))
+                    st.session_state.mov_title = ""
+                    st.rerun()
+                else:
+                    st.error("⚠️ Movie title is required!")
+
+        st.markdown('<div class="section-header">📺 To Watch</div>', unsafe_allow_html=True)
+        movies_to_watch = fetch_all("SELECT movie_id, title, category FROM movies WHERE watched = 0 ORDER BY movie_id DESC")
+        
+        if not movies_to_watch:
+            st.caption("No movies in your watchlist. Time to add some!")
+        else:
+            for mid, mtitle, mcat in movies_to_watch:
+                with st.container():
+                    c1, c2, c3, c4 = st.columns([1, 4, 3, 1])
+                    with c1:
+                        if st.button("✅", key=f"mcheck_{mid}", help="Mark as watched"):
+                            execute("UPDATE movies SET watched = 1 WHERE movie_id = ?", (mid,))
+                            st.rerun()
+                    with c2:
+                        st.markdown(f"<div style='padding-top: 6px;'><b>{mtitle}</b></div>", unsafe_allow_html=True)
+                    with c3:
+                        st.markdown(f"<div style='padding-top: 6px; color: #A0522D; font-size: 0.85rem;'>{mcat}</div>", unsafe_allow_html=True)
+                    with c4:
+                        if st.button("🗑️", key=f"mdel_{mid}"):
+                            execute("DELETE FROM movies WHERE movie_id = ?", (mid,))
+                            st.rerun()
+                            
+        st.write("")
+        with st.expander("👀 Already Watched"):
+            watched_movies = fetch_all("SELECT movie_id, title, category FROM movies WHERE watched = 1 ORDER BY movie_id DESC")
+            if not watched_movies:
+                st.caption("Nothing watched yet.")
+            else:
+                for mid, mtitle, mcat in watched_movies:
+                    with st.container():
+                        c1, c2, c3, c4 = st.columns([1, 4, 3, 1])
+                        with c1:
+                            if st.button("↺", key=f"muncheck_{mid}", help="Move back to watchlist"):
+                                execute("UPDATE movies SET watched = 0 WHERE movie_id = ?", (mid,))
+                                st.rerun()
+                        with c2:
+                            st.markdown(f"<div style='padding-top: 6px; text-decoration: line-through; color: gray;'>{mtitle}</div>", unsafe_allow_html=True)
+                        with c3:
+                            st.markdown(f"<div style='padding-top: 6px; color: #C0A090; font-size: 0.85rem;'>{mcat}</div>", unsafe_allow_html=True)
+                        with c4:
+                            if st.button("🗑️", key=f"mdelw_{mid}"):
+                                execute("DELETE FROM movies WHERE movie_id = ?", (mid,))
+                                st.rerun()
