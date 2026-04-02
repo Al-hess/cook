@@ -8,6 +8,7 @@ import os
 from PIL import Image
 import io
 import base64
+import datetime
 
 # ─────────────────────────────────────────
 #  DATABASE
@@ -64,6 +65,11 @@ def init_db():
             sport_value   INTEGER DEFAULT 1,
             notes         TEXT DEFAULT '',
             favourite     INTEGER DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS counters (
+            id            TEXT PRIMARY KEY,
+            last_date     TEXT NOT NULL
         );
 
         INSERT OR IGNORE INTO categories (name) VALUES
@@ -176,12 +182,18 @@ ACTIVITY_CATEGORIES = [
     "🎬 Entertainment", "🍽️ Food & Drink", "✈️ Travel", "🧘 Wellness", "📚 Learning", "🛍️ Shopping"
 ]
 
+def get_counter(counter_id):
+    row = fetch_all("SELECT last_date FROM counters WHERE id = ?", (counter_id,))
+    if row:
+        return datetime.datetime.fromisoformat(row[0][0])
+    return None
+
 # ─────────────────────────────────────────
 #  PAGE CONFIG & STYLING
 # ─────────────────────────────────────────
 
 st.set_page_config(
-    page_title="Simp App 🌸",
+    page_title="Kelia App 🌸",
     page_icon="🌸",
     layout="centered",
     initial_sidebar_state="collapsed"
@@ -385,8 +397,8 @@ for key, default in [
 #  HEADER
 # ─────────────────────────────────────────
 
-st.markdown('<div class="app-title">🌸 Simp App</div>', unsafe_allow_html=True)
-st.markdown('<div class="app-sub">we are cooked chat 🍳 🏃</div>', unsafe_allow_html=True)
+st.markdown('<div class="app-title">🌸 Kelia App</div>', unsafe_allow_html=True)
+st.markdown('<div class="app-sub">Our little world 🍳 🏃</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
 #  RECIPE DETAIL VIEW
@@ -421,6 +433,7 @@ def show_detail(recipe_id):
             st.rerun()
     with col2:
         if st.button("✏️ Edit", key="edit_btn"):
+            _clear_recipe_form()
             st.session_state.edit_recipe_id = rid
             st.session_state.view_recipe_id = None
             st.rerun()
@@ -519,12 +532,9 @@ def _init_recipe_form(prefill):
 def _clear_recipe_form():
     """Remove all recipe form keys from session state."""
     ss = st.session_state
-    k = _ss_form_key
     keys_to_del = [key for key in ss if key.startswith("rf_")]
     for key in keys_to_del:
         del ss[key]
-    ss.ingredient_count = 3
-    ss.step_count = 3
 
 
 def show_recipe_form(edit_id=None):
@@ -561,7 +571,7 @@ def show_recipe_form(edit_id=None):
 
     # ── Basic fields ──
     name   = st.text_input("Recipe Name *", key=k("name"), placeholder="e.g. Grandma's Risotto")
-    author = st.text_input("Added by",      key=k("author"), placeholder="Your name or Kelia")
+    author = st.text_input("Added by",      key=k("author"), placeholder="Name")
 
     col_cat, col_new = st.columns([3, 2])
     with col_cat:
@@ -580,40 +590,48 @@ def show_recipe_form(edit_id=None):
 
     # ── Ingredients ──
     st.markdown("### 🛒 Ingredients")
-    n_ing = ss[k("ing_count")]
+    # Initialize ingredients list for data_editor
+    if k("ing_data") not in ss:
+        ing_data = [{"Ingredient": i[0], "Qty": i[1], "Unit": i[2]} for i in prefill["ingredients"]]
+        while len(ing_data) < 3:
+            ing_data.append({"Ingredient": "", "Qty": "", "Unit": ""})
+        ss[k("ing_data")] = ing_data
 
-    for i in range(n_ing):
-        ca, cb, cc = st.columns([4, 2, 2])
-        with ca: st.text_input(f"Ingredient {i+1}", key=k(f"iname_{i}"), label_visibility="collapsed", placeholder=f"Ingredient {i+1}")
-        with cb: st.text_input("Qty",  key=k(f"iqty_{i}"),  label_visibility="collapsed", placeholder="Qty")
-        with cc: st.text_input("Unit", key=k(f"iunit_{i}"), label_visibility="collapsed", placeholder="Unit")
-
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("+ Add Ingredient Row", key="add_ing_row"):
-            # Save current count and add a new blank row
-            new_idx = ss[k("ing_count")]
-            ss[k(f"iname_{new_idx}")] = ""
-            ss[k(f"iqty_{new_idx}")]  = ""
-            ss[k(f"iunit_{new_idx}")] = ""
-            ss[k("ing_count")] = new_idx + 1
-            st.rerun()
+    edited_ings = st.data_editor(
+        ss[k("ing_data")],
+        num_rows="dynamic",
+        column_config={
+            "Ingredient": st.column_config.TextColumn("Ingredient", required=True, width="large"),
+            "Qty": st.column_config.TextColumn("Qty", width="small"),
+            "Unit": st.column_config.TextColumn("Unit", width="small"),
+        },
+        use_container_width=True,
+        hide_index=True,
+        key=k("ing_editor")
+    )
 
     # ── Steps ──
     st.markdown("### 👨‍🍳 Steps")
-    n_step = ss[k("step_count")]
+    if k("step_data") not in ss:
+        step_data = [{"Instruction": s} for s in prefill["steps"]]
+        while len(step_data) < 3:
+            step_data.append({"Instruction": ""})
+        ss[k("step_data")] = step_data
 
-    for i in range(n_step):
-        st.text_area(f"Step {i+1}", key=k(f"step_{i}"), height=68, placeholder=f"Describe step {i+1}…")
-
-    with c2:
-        if st.button("+ Add Step Row", key="add_step_row"):
-            new_idx = ss[k("step_count")]
-            ss[k(f"step_{new_idx}")] = ""
-            ss[k("step_count")] = new_idx + 1
-            st.rerun()
+    edited_steps = st.data_editor(
+        ss[k("step_data")],
+        num_rows="dynamic",
+        column_config={
+            "Instruction": st.column_config.TextColumn("Instruction", required=True, width="large"),
+        },
+        use_container_width=True,
+        hide_index=True,
+        key=k("step_editor")
+    )
 
     st.divider()
+    # Adding a note to reassure the user
+    st.info("💡 Hitting 'Enter' on your keyboard saves your typing. A recipe is ONLY saved when you click the button below.")
     submitted = st.button("💾 Save Recipe", type="primary", use_container_width=True, key="save_recipe_btn")
 
     if submitted:
@@ -644,15 +662,18 @@ def show_recipe_form(edit_id=None):
             image_blob = buf.getvalue()
 
         ing_rows = []
-        for i in range(ss[k("ing_count")]):
-            iname = ss.get(k(f"iname_{i}"), "").strip()
-            iqty  = ss.get(k(f"iqty_{i}"),  "").strip()
-            iunit = ss.get(k(f"iunit_{i}"), "").strip()
-            ing_rows.append((iname, iqty, iunit))
+        for row in edited_ings:
+            iname = str(row.get("Ingredient", "")).strip()
+            iqty  = str(row.get("Qty", "")).strip()
+            iunit = str(row.get("Unit", "")).strip()
+            if iname:
+                ing_rows.append((iname, iqty, iunit))
 
         step_rows = []
-        for i in range(ss[k("step_count")]):
-            step_rows.append(ss.get(k(f"step_{i}"), "").strip())
+        for row in edited_steps:
+            stext = str(row.get("Instruction", "")).strip()
+            if stext:
+                step_rows.append(stext)
 
         if is_edit:
             execute("""UPDATE recipes SET name=?, category_id=?, servings=?, prep_min=?,
@@ -904,8 +925,8 @@ elif st.session_state.edit_activity_id:
     show_activity_form(edit_id=st.session_state.edit_activity_id)
 
 else:
-    # ── TWO TOP-LEVEL TABS ──
-    tab_cooking, tab_activities = st.tabs(["🍳 Cooking", "🏃 Activities"])
+    # ── THREE TOP-LEVEL TABS ──
+    tab_cooking, tab_activities, tab_us = st.tabs(["🍳 Cooking", "🏃 Activities", "💕 Us"])
 
     # ════════════════════════════════════════
     #  COOKING TAB
@@ -964,3 +985,42 @@ else:
                 st.markdown('<div class="empty-state"><span class="emoji">❤️</span>No favourite activities yet.<br>Open one and tap ❤️ Favourite.</div>', unsafe_allow_html=True)
             else:
                 show_activity_cards(fav_acts)
+
+    # ════════════════════════════════════════
+    #  US TAB (COUNTERS)
+    # ════════════════════════════════════════
+    with tab_us:
+        # Initialize default counters if missing
+        now = datetime.datetime.now()
+        for cid in ["last_date", "last_flowers"]:
+            if not get_counter(cid):
+                execute("REPLACE INTO counters (id, last_date) VALUES (?, ?)", (cid, now.isoformat()))
+
+        last_date = get_counter("last_date")
+        last_flowers = get_counter("last_flowers")
+        
+        days_date = (now - last_date).days if last_date else 0
+        days_flowers = (now - last_flowers).days if last_flowers else 0
+        
+        st.markdown('<div class="section-header">💑 Trackers</div>', unsafe_allow_html=True)
+        
+        ca, cb = st.columns(2)
+        with ca:
+            st.markdown('<div class="activity-card" style="text-align: center;">', unsafe_allow_html=True)
+            st.markdown("<div style='font-size: 1rem; font-weight: 600; color: #A0522D; margin-bottom: 8px;'>Last Date 🍷</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='color: #C0392B; font-size: 3.5rem; font-weight: 700; line-height: 1;'>{days_date}</div>", unsafe_allow_html=True)
+            st.markdown("<div style='font-size: 0.8rem; color: #A0522D; margin-bottom: 16px;'>days ago</div>", unsafe_allow_html=True)
+            if st.button("Restart 🍷", use_container_width=True, key="res_date"):
+                execute("REPLACE INTO counters (id, last_date) VALUES (?, ?)", ("last_date", datetime.datetime.now().isoformat()))
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+        with cb:
+            st.markdown('<div class="activity-card" style="text-align: center;">', unsafe_allow_html=True)
+            st.markdown("<div style='font-size: 1rem; font-weight: 600; color: #A0522D; margin-bottom: 8px;'>Flowers 💐</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='color: #C0392B; font-size: 3.5rem; font-weight: 700; line-height: 1;'>{days_flowers}</div>", unsafe_allow_html=True)
+            st.markdown("<div style='font-size: 0.8rem; color: #A0522D; margin-bottom: 16px;'>days ago</div>", unsafe_allow_html=True)
+            if st.button("Restart 💐", use_container_width=True, key="res_flow"):
+                execute("REPLACE INTO counters (id, last_date) VALUES (?, ?)", ("last_flowers", datetime.datetime.now().isoformat()))
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
