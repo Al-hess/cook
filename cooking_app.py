@@ -16,74 +16,132 @@ import datetime
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "kelia_recipes.db")
 
+def is_postgres():
+    return "postgres" in st.secrets and "url" in st.secrets["postgres"]
+
 def get_conn():
+    if is_postgres():
+        import psycopg2
+        return psycopg2.connect(st.secrets["postgres"]["url"])
     return sqlite3.connect(DB_PATH, check_same_thread=False)
 
 def init_db():
     conn = get_conn()
     c = conn.cursor()
-    c.executescript("""
-        CREATE TABLE IF NOT EXISTS categories (
-            category_id   INTEGER PRIMARY KEY AUTOINCREMENT,
-            name          TEXT UNIQUE NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS recipes (
-            recipe_id     INTEGER PRIMARY KEY AUTOINCREMENT,
-            name          TEXT NOT NULL,
-            category_id   INTEGER REFERENCES categories(category_id),
-            servings      INTEGER DEFAULT 2,
-            prep_min      INTEGER DEFAULT 0,
-            cook_min      INTEGER DEFAULT 0,
-            notes         TEXT,
-            favourite     INTEGER DEFAULT 0,
-            author        TEXT DEFAULT '',
-            image         BLOB
-        );
-
-        CREATE TABLE IF NOT EXISTS ingredients (
-            ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            recipe_id     INTEGER REFERENCES recipes(recipe_id) ON DELETE CASCADE,
-            name          TEXT NOT NULL,
-            qty           TEXT,
-            unit          TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS steps (
-            step_id       INTEGER PRIMARY KEY AUTOINCREMENT,
-            recipe_id     INTEGER REFERENCES recipes(recipe_id) ON DELETE CASCADE,
-            step_number   INTEGER,
-            instruction   TEXT NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS activities (
-            activity_id   INTEGER PRIMARY KEY AUTOINCREMENT,
-            name          TEXT NOT NULL,
-            category      TEXT DEFAULT '',
-            cost          REAL DEFAULT 0,
-            duration_min  INTEGER DEFAULT 0,
-            sport_value   INTEGER DEFAULT 1,
-            notes         TEXT DEFAULT '',
-            favourite     INTEGER DEFAULT 0
-        );
-
-        CREATE TABLE IF NOT EXISTS counters (
-            id            TEXT PRIMARY KEY,
-            last_date     TEXT NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS movies (
-            movie_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-            title         TEXT NOT NULL,
-            category      TEXT NOT NULL,
-            watched       INTEGER DEFAULT 0
-        );
-
-        INSERT OR IGNORE INTO categories (name) VALUES
-            ('🍝 Pasta'), ('🥗 Salads'), ('🥩 Meat'),
-            ('🐟 Fish'), ('🥘 Soups & Stews'), ('🍰 Desserts'),
-            ('🌮 Street Food'), ('🥞 Breakfast'), ('🍹 Drinks'), ('🥦 Vegetarian');
-    """)
+    
+    if is_postgres():
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS categories (
+                category_id   SERIAL PRIMARY KEY,
+                name          TEXT UNIQUE NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS recipes (
+                recipe_id     SERIAL PRIMARY KEY,
+                name          TEXT NOT NULL,
+                category_id   INTEGER REFERENCES categories(category_id),
+                servings      INTEGER DEFAULT 2,
+                prep_min      INTEGER DEFAULT 0,
+                cook_min      INTEGER DEFAULT 0,
+                notes         TEXT,
+                favourite     INTEGER DEFAULT 0,
+                author        TEXT DEFAULT '',
+                image         BYTEA
+            );
+            CREATE TABLE IF NOT EXISTS ingredients (
+                ingredient_id SERIAL PRIMARY KEY,
+                recipe_id     INTEGER REFERENCES recipes(recipe_id) ON DELETE CASCADE,
+                name          TEXT NOT NULL,
+                qty           TEXT,
+                unit          TEXT
+            );
+            CREATE TABLE IF NOT EXISTS steps (
+                step_id       SERIAL PRIMARY KEY,
+                recipe_id     INTEGER REFERENCES recipes(recipe_id) ON DELETE CASCADE,
+                step_number   INTEGER,
+                instruction   TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS activities (
+                activity_id   SERIAL PRIMARY KEY,
+                name          TEXT NOT NULL,
+                category      TEXT DEFAULT '',
+                cost          REAL DEFAULT 0,
+                duration_min  INTEGER DEFAULT 0,
+                sport_value   INTEGER DEFAULT 1,
+                notes         TEXT DEFAULT '',
+                favourite     INTEGER DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS counters (
+                id            TEXT PRIMARY KEY,
+                last_date     TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS movies (
+                movie_id      SERIAL PRIMARY KEY,
+                title         TEXT NOT NULL,
+                category      TEXT NOT NULL,
+                watched       INTEGER DEFAULT 0
+            );
+            INSERT INTO categories (name) VALUES
+                ('🍝 Pasta'), ('🥗 Salads'), ('🥩 Meat'),
+                ('🐟 Fish'), ('🥘 Soups & Stews'), ('🍰 Desserts'),
+                ('🌮 Street Food'), ('🥞 Breakfast'), ('🍹 Drinks'), ('🥦 Vegetarian')
+            ON CONFLICT DO NOTHING;
+        """)
+    else:
+        c.executescript("""
+            CREATE TABLE IF NOT EXISTS categories (
+                category_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                name          TEXT UNIQUE NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS recipes (
+                recipe_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+                name          TEXT NOT NULL,
+                category_id   INTEGER REFERENCES categories(category_id),
+                servings      INTEGER DEFAULT 2,
+                prep_min      INTEGER DEFAULT 0,
+                cook_min      INTEGER DEFAULT 0,
+                notes         TEXT,
+                favourite     INTEGER DEFAULT 0,
+                author        TEXT DEFAULT '',
+                image         BLOB
+            );
+            CREATE TABLE IF NOT EXISTS ingredients (
+                ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                recipe_id     INTEGER REFERENCES recipes(recipe_id) ON DELETE CASCADE,
+                name          TEXT NOT NULL,
+                qty           TEXT,
+                unit          TEXT
+            );
+            CREATE TABLE IF NOT EXISTS steps (
+                step_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                recipe_id     INTEGER REFERENCES recipes(recipe_id) ON DELETE CASCADE,
+                step_number   INTEGER,
+                instruction   TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS activities (
+                activity_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                name          TEXT NOT NULL,
+                category      TEXT DEFAULT '',
+                cost          REAL DEFAULT 0,
+                duration_min  INTEGER DEFAULT 0,
+                sport_value   INTEGER DEFAULT 1,
+                notes         TEXT DEFAULT '',
+                favourite     INTEGER DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS counters (
+                id            TEXT PRIMARY KEY,
+                last_date     TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS movies (
+                movie_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                title         TEXT NOT NULL,
+                category      TEXT NOT NULL,
+                watched       INTEGER DEFAULT 0
+            );
+            INSERT OR IGNORE INTO categories (name) VALUES
+                ('🍝 Pasta'), ('🥗 Salads'), ('🥩 Meat'),
+                ('🐟 Fish'), ('🥘 Soups & Stews'), ('🍰 Desserts'),
+                ('🌮 Street Food'), ('🥞 Breakfast'), ('🍹 Drinks'), ('🥦 Vegetarian');
+        """)
     conn.commit()
     conn.close()
 
@@ -94,6 +152,9 @@ init_db()
 # ─────────────────────────────────────────
 
 def fetch_all(query, params=()):
+    if is_postgres():
+        query = query.replace("?", "%s")
+        
     conn = get_conn()
     c = conn.cursor()
     c.execute(query, params)
@@ -101,11 +162,26 @@ def fetch_all(query, params=()):
     conn.close()
     return rows
 
-def execute(query, params=()):
+def execute(query, params=(), return_id=False):
+    if is_postgres():
+        query = query.replace("?", "%s")
+        if "REPLACE INTO counters" in query:
+            query = query.replace("REPLACE INTO counters", "INSERT INTO counters")
+            query += " ON CONFLICT (id) DO UPDATE SET last_date = EXCLUDED.last_date"
+        if return_id:
+            query += " RETURNING recipe_id"
+            
     conn = get_conn()
     c = conn.cursor()
     c.execute(query, params)
-    last_id = c.lastrowid
+    
+    last_id = None
+    if return_id:
+        if is_postgres():
+            last_id = c.fetchone()[0]
+        else:
+            last_id = c.lastrowid
+            
     conn.commit()
     conn.close()
     return last_id
@@ -663,7 +739,10 @@ def show_recipe_form(edit_id=None):
 
         final_cat_name = final_new_cat if final_new_cat else final_sel_cat
         if final_new_cat:
-            execute("INSERT OR IGNORE INTO categories (name) VALUES (?)", (final_cat_name,))
+            if is_postgres():
+                execute("INSERT INTO categories (name) VALUES (%s) ON CONFLICT (name) DO NOTHING", (final_cat_name,))
+            else:
+                execute("INSERT OR IGNORE INTO categories (name) VALUES (?)", (final_cat_name,))
         cat_id = fetch_all("SELECT category_id FROM categories WHERE name = ?", (final_cat_name,))
         cat_id = cat_id[0][0] if cat_id else None
 
@@ -700,7 +779,8 @@ def show_recipe_form(edit_id=None):
         else:
             recipe_id = execute(
                 "INSERT INTO recipes (name, category_id, servings, prep_min, cook_min, notes, author, image) VALUES (?,?,?,?,?,?,?,?)",
-                (final_name, cat_id, final_servings, final_prep, final_cook, final_notes, final_author, image_blob)
+                (final_name, cat_id, final_servings, final_prep, final_cook, final_notes, final_author, image_blob),
+                return_id=True
             )
 
         for iname, iqty, iunit in ing_rows:
@@ -1012,8 +1092,8 @@ else:
         last_date = get_counter("last_date")
         last_flowers = get_counter("last_flowers")
         
-        days_date = (now - last_date).days if last_date else 0
-        days_flowers = (now - last_flowers).days if last_flowers else 0
+        days_date = (now.date() - last_date.date()).days if last_date else 0
+        days_flowers = (now.date() - last_flowers.date()).days if last_flowers else 0
         
         st.markdown('<div class="section-header">💑 Rat Trackers 🐀</div>', unsafe_allow_html=True)
         
