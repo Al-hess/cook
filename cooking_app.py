@@ -489,6 +489,9 @@ for key, default in [
 st.markdown('<div class="app-title">🌸 Simp App</div>', unsafe_allow_html=True)
 st.markdown('<div class="app-sub">We are cooked chat 🍳 🏃</div>', unsafe_allow_html=True)
 
+if not is_postgres():
+    st.warning("⚠️ **Warning:** The app is currently using a local, temporary database. Any recipes you add will be deleted when the server goes to sleep. Please configure the PostgreSQL secrets in Streamlit Cloud to save your data permanently.")
+
 # ─────────────────────────────────────────
 #  RECIPE DETAIL VIEW
 # ─────────────────────────────────────────
