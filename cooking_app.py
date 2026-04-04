@@ -17,12 +17,12 @@ import datetime
 DB_PATH = os.path.join(os.path.dirname(__file__), "kelia_recipes.db")
 
 def is_postgres():
-    return "postgres" in st.secrets and "url" in st.secrets["postgres"]
+    return "supabase_cooking" in st.secrets and "url" in st.secrets["supabase_cooking"]
 
 def get_conn():
     if is_postgres():
         import psycopg2
-        return psycopg2.connect(st.secrets["postgres"]["url"])
+        return psycopg2.connect(st.secrets["supabase_cooking"]["url"])
     return sqlite3.connect(DB_PATH, check_same_thread=False)
 
 def init_db():
