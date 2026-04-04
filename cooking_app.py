@@ -478,6 +478,8 @@ for key, default in [
     ("edit_activity_id", None),
     ("confirm_delete", False),
     ("confirm_delete_activity", False),
+    ("flash_msg", None),
+    ("flash_balloons", False),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -491,6 +493,14 @@ st.markdown('<div class="app-sub">We are cooked chat 🍳 🏃</div>', unsafe_al
 
 if not is_postgres():
     st.warning("⚠️ **Warning:** The app is currently using a local, temporary database. Any recipes you add will be deleted when the server goes to sleep. Please configure the PostgreSQL secrets in Streamlit Cloud to save your data permanently.")
+
+if st.session_state.get("flash_msg"):
+    st.toast(st.session_state.flash_msg, icon="✅")
+    st.session_state.flash_msg = None
+
+if st.session_state.get("flash_balloons"):
+    st.balloons()
+    st.session_state.flash_balloons = False
 
 # ─────────────────────────────────────────
 #  RECIPE DETAIL VIEW
@@ -541,7 +551,7 @@ def show_detail(recipe_id):
                 delete_recipe(rid)
                 st.session_state.view_recipe_id = None
                 st.session_state.confirm_delete = False
-                st.success("Recipe deleted.")
+                st.session_state.flash_msg = "Recipe deleted."
                 st.rerun()
         with cb:
             if st.button("Cancel"):
@@ -798,8 +808,8 @@ def show_recipe_form(edit_id=None):
 
         _clear_recipe_form()
         ss.edit_recipe_id = None
-        st.success(f"✅ Recipe **{final_name}** saved!")
-        st.balloons()
+        st.session_state.flash_msg = f"Recipe **{final_name}** saved!"
+        st.session_state.flash_balloons = True
         st.rerun()
 
 
@@ -893,8 +903,8 @@ def show_activity_form(edit_id=None):
                        VALUES (?,?,?,?,?,?)""",
                     (act_name.strip(), act_cat, act_cost, act_dur, act_sv, act_notes.strip()))
         st.session_state.edit_activity_id = None
-        st.success(f"✅ Activity **{act_name.strip()}** saved!")
-        st.balloons()
+        st.session_state.flash_msg = f"Activity **{act_name.strip()}** saved!"
+        st.session_state.flash_balloons = True
         st.rerun()
 
 
@@ -991,7 +1001,7 @@ def show_activity_detail(activity_id):
                 delete_activity(aid)
                 st.session_state.view_activity_id = None
                 st.session_state.confirm_delete_activity = False
-                st.success("Activity deleted.")
+                st.session_state.flash_msg = "Activity deleted."
                 st.rerun()
         with cb:
             if st.button("Cancel", key="act_cancel_del"):
